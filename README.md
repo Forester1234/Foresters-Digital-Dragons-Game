@@ -2,7 +2,7 @@
 
 [My Notes](notes.md)
 
-A brief description of the application here. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+A simple role-playing game for one or more players.
 
 
 > [!NOTE]
@@ -63,12 +63,18 @@ sequenceDiagram
 
 I am going to use the required technologies in the following ways.
 
-- **HTML** - Description here
-- **CSS** - Description here
-- **React** - Description here
-- **Service** - Description here
-- **DB/Login** - Description here
-- **WebSocket** - Description here
+- **HTML** - Uses correct HTML structure for application for four HTML pages. One for login, one for Joining/Creating a game, one for creating a character, and another for playing the game
+- **CSS** - Implementation of styling that works on different screen sizes and uses good color and contrast.
+- **React** - Provides the interactive portions of the game interface including joining/making the game, action selection, and communication. It will also display shared elements such as health, maps, and story descriptions. It will update these elements as choices are made.
+- **Service** - Backend service with endpoints for:
+  - Making and Joining games.
+  - Creating and collecting character information.
+  - Retriving current game data such as health, maps, and story text.
+  - Submitting player actions and text messages.
+  - Handling player actions including text messages and attack actions.
+  - Register, login, and logout users.
+- **DB/Login** - Store authentication information, and user accounts. Keeps game information including player characters, health, and recent story events.
+- **WebSocket** - As each player performs an action that action is displayed to all other players in that game.
 
 ## 🚀 AWS deliverable
 
