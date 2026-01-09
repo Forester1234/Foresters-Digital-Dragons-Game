@@ -33,13 +33,21 @@ For this deliverable I did the following. I checked the box `[x]` and added a de
 ![Gameplay screen sketch](https://github.com/user-attachments/assets/f2d3f6e1-1d18-4d26-ad04-af307270e1a0)
 
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+Following is a sequence diagram showing how Players interact with the game and eachother.
 
 ```mermaid
 sequenceDiagram
-    actor You
-    actor Website
-    You->>Website: Replace this with your design
+    actor 3
+    actor 2
+    actor 1
+    1->>Handler: [Text]"2, what do you want to do?"
+    Handler-->>2: [Text]"2, what do you want to do?"
+    Handler-->>3: [Text]"2, what do you want to do?"
+    2->>Handler: [Sword Attack]
+    Handler->>Server: Roll Damage
+    Handler-->>1: [Text]"#35; damage dealt."
+    Handler-->>2: [Text]"#35; damage dealt."
+    Handler-->>3: [Text]"#35; damage dealt."
 ```
 
 ### Key features
