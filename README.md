@@ -30,7 +30,8 @@ For this deliverable I did the following. I checked the box `[x]` and added a de
 
 ### Design
 
-![Design image](placeholder.png)
+![Gameplay screen sketch]<img width="970" height="693" alt="Screenshot 2026-01-08 at 6 25 16 PM" src="https://github.com/user-attachments/assets/f2d3f6e1-1d18-4d26-ad04-af307270e1a0" />
+
 
 Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
 
