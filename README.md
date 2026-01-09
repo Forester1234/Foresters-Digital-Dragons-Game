@@ -2,7 +2,7 @@
 
 [My Notes](notes.md)
 
-Digital Dragons is a simple game for one or more players. It is meant to be able to help the players collaboratively tell a story together similar to popular Tabletop Role-Playing Games such as Dungeons & Dragons. It will keep track of and share player information including character state and anything players do. It will also share information on the game and story when neccesary through maps, images, and text descriptions. 
+Digital Dragons is a simple game for one or more players. It is meant to be able to help the players collaboratively tell a story together similar to popular Tabletop Role-Playing Games such as Dungeons & Dragons. It will keep track of and share player information including character state and anything the players do. It will also share information on the game and story when neccesary through maps, images, and text descriptions. 
 
 > [!NOTE]
 > This is a template for your startup application. You must modify this `README.md` file for each phase of your development. You only need to fill in the section for each deliverable when that deliverable is submitted in Canvas. Without completing the section for a deliverable, the TA will not know what to look for when grading your submission. Feel free to add additional information to each deliverable description, but make sure you at least have the list of rubric items and a description of what you did for each item.
