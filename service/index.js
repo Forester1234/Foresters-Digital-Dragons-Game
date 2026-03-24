@@ -9,29 +9,10 @@ const authCookieName = 'token';
 
 // The users are saved in memory and disappear whenever the service is restarted.
 let users = [];
-let games = [];
+
 // Fill in new saved elements
 const fs = require('fs');
 const path = require('path');
-
-const SAVE_DIR = path.join(__dirname, 'saved_games');
-fs.mkdirSync(SAVE_DIR, { recursive: true });
-
-fs.readdirSync(SAVE_DIR).forEach(file => {
-  if (file.endsWith('.json')) {
-    const data = fs.readFileSync(path.join(SAVE_DIR, file));
-    games.push(JSON.parse(data));
-  }
-});
-
-function saveGameToDisk(game) {
-  const filePath = path.join(SAVE_DIR, `${game.name}.json`);
-  try {
-    fs.writeFileSync(filePath, JSON.stringify(game, null, 2));
-  } catch (err) {
-    console.error('Failed to save game:', err);
-  }
-}
 
 // The service port. In production the front-end code is statically hosted by the service on the same port.
 const port = process.argv.length > 2 ? process.argv[2] : 4000;
@@ -95,7 +76,7 @@ const verifyAuth = async (req, res, next) => {
   }
 };
 
-apiRouter.post('/game', verifyAuth, (req, res) => {
+apiRouter.post('/game', verifyAuth, async (req, res) => {
   const gmName = req.body.player;
 
   const game = {
@@ -109,14 +90,12 @@ apiRouter.post('/game', verifyAuth, (req, res) => {
     created: new Date(),
   };
 
-  games.push(game);
-  saveGameToDisk(game);
-
+  await db.addGame(game);
   res.send(game);
 });
 
-apiRouter.post('/game/join', verifyAuth, (req, res) => {
-  const game = games.find((g) => g.name === req.body.name);
+apiRouter.post('/game/join', verifyAuth, async (req, res) => {
+  const game = await db.getGame(req.body.name);
 
   if (!game) {
     return res.status(404).send({ msg: 'Game not found' });
@@ -129,15 +108,10 @@ apiRouter.post('/game/join', verifyAuth, (req, res) => {
 
   let player = game.players.find(p => p.playerName === playerName);
 
-  const existingPlayer = game.players.find(
-    (p) => p.playerName === playerName
-  );
-
   if (player) {
-
     if (req.body.character) {
       player.character = req.body.character;
-      saveGameToDisk(game);
+      await db.updateGame(game);
     }
 
     return res.send({
@@ -154,8 +128,7 @@ apiRouter.post('/game/join', verifyAuth, (req, res) => {
   };
 
   game.players.push(player);
-
-  saveGameToDisk(game);
+  await db.updateGame(game);
 
   res.send({
     ...game,
@@ -164,10 +137,10 @@ apiRouter.post('/game/join', verifyAuth, (req, res) => {
   });
 });
 
-apiRouter.post('/game/state', verifyAuth, (req, res) => {
+apiRouter.post('/game/state', verifyAuth, async (req, res) => {
   const { name, players, monsters, mapImage, messages } = req.body;
 
-  const game = games.find(g => g.name === name);
+  const game = await db.getGame(name);
   if (!game) return res.status(404).send({ msg: 'Game not found' });
 
   if (players) game.players = players;
@@ -175,12 +148,12 @@ apiRouter.post('/game/state', verifyAuth, (req, res) => {
   if (mapImage) game.mapImage = mapImage;
   if (messages) game.messages = messages.slice(-20);
 
-  saveGameToDisk(game);
+  await db.updateGame(game);
   res.send(game);
 });
 
-apiRouter.get('/game/state/:name', verifyAuth, (req, res) => {
-  const game = games.find(g => g.name === req.params.name);
+apiRouter.get('/game/state/:name', verifyAuth, async (req, res) => {
+  const game = await db.getGame(req.params.name);
   if (!game) return res.status(404).send({ msg: 'Game not found' });
 
   res.send({
@@ -193,11 +166,10 @@ apiRouter.get('/game/state/:name', verifyAuth, (req, res) => {
 
 // Fill in new endpoints
 
-apiRouter.get('/games', verifyAuth, (_req, res) => {
-  res.send(games);
+apiRouter.get('/games', verifyAuth, async (_req, res) => {
+  const allGames = await db.getAllGames();
+  res.send(allGames);
 });
-
-
 
 // Default error handler
 app.use(function (err, req, res, next) {
