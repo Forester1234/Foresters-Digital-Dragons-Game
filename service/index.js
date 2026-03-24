@@ -7,9 +7,6 @@ const db = require('./database.js');
 
 const authCookieName = 'token';
 
-// The users are saved in memory and disappear whenever the service is restarted.
-let users = [];
-
 // Fill in new saved elements
 const fs = require('fs');
 const path = require('path');
