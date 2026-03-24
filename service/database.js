@@ -9,6 +9,7 @@ const gameCollection = db.collection('games');
 
 (async function testConnection() {
   try {
+    await client.connect();
     await db.command({ ping: 1 });
     console.log(`Connect to database`);
   } catch (ex) {
