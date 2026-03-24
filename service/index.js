@@ -211,21 +211,17 @@ app.use((_req, res) => {
 
 async function createUser(email, password) {
   const passwordHash = await bcrypt.hash(password, 10);
-
-  const user = {
-    email: email,
-    password: passwordHash,
-    token: uuid.v4(),
-  };
-  users.push(user);
-
+  const token = uuid.v4();
+  const user = {email: email, password: passwordHash, token: token,};
+  await db.addUser(user);
   return user;
 }
 
 async function findUser(field, value) {
   if (!value) return null;
-
-  return users.find((u) => u[field] === value);
+  if (field === 'email') {return db.getUser(value);}
+  if (field === 'token') {return db.getUserByToken(value);}
+  return db.getUser(field, value);
 }
 
 // setAuthCookie in the HTTP response
