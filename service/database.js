@@ -55,3 +55,14 @@ function getAllGames() {
   return gameCollection.find({}).toArray();
 }
 
+module.exports = {
+  getUser,
+  getUserByToken,
+  addUser,
+  updateUser,
+  removeUserToken,
+  addGame,
+  updateGame,
+  getGame,
+  getAllGames,
+};
