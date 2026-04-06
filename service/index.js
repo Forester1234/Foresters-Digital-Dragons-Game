@@ -4,6 +4,7 @@ const express = require('express');
 const uuid = require('uuid');
 const app = express();
 const db = require('./database.js');
+const { peerProxy } = require('./peerProxy.js');
 
 const authCookieName = 'token';
 
@@ -57,7 +58,8 @@ apiRouter.post('/auth/login', async (req, res) => {
 apiRouter.delete('/auth/logout', async (req, res) => {
   const user = await findUser('token', req.cookies[authCookieName]);
   if (user) {
-    await db.removeUserToken(user);
+    delete user.token;
+    db.updateUser(user);
   }
   res.clearCookie(authCookieName);
   res.status(204).end();
@@ -203,6 +205,8 @@ function setAuthCookie(res, authToken) {
   });
 }
 
-app.listen(port, () => {
+const httpService = app.listen(port, () => {
   console.log(`Listening on port ${port}`);
 });
+
+peerProxy(httpService);
