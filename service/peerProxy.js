@@ -9,8 +9,14 @@ function peerProxy(httpServer) {
 
     // Forward messages to everyone except the sender
     socket.on('message', function message(data) {
+      const msg = JSON.parse(data);
+      socket.game = msg.game;
       socketServer.clients.forEach((client) => {
-        if (client !== socket && client.readyState === WebSocket.OPEN) {
+        if (
+          client !== socket && 
+          client.readyState === WebSocket.OPEN &&
+          client.game === msg.game
+        ) {
           client.send(data);
         }
       });

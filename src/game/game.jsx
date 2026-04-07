@@ -27,20 +27,21 @@ export function Game({ role, character, selectedGame }) {
 
   React.useEffect(() => {
     const wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
-    const ws = new WebSocket(`${wsProtocol}://${window.location.host}`);
+    const ws = new WebSocket(`${wsProtocol}://${window.location.host}/ws`);
     
     ws.onopen = () => console.log('Connected to WebSocket');
     
     ws.onmessage = (event) => {
       const msg = JSON.parse(event.data);
+      if (msg.game !== selectedGame.name) return;
       if (msg.type === 'state') {
         setPlayers(msg.players || []);
         setMonsters(msg.monsters || []);
         setMapImage(msg.mapImage || forestMap);
+      }
 
-        if (msg.messages) {
-          setMessages(prev => [...prev.slice(-10), ...msg.messages.slice(-10)]);
-        }
+      if (msg.type === 'chat') {
+        setMessages(prev => [...prev.slice(-19), msg]);
       }
     };
     
@@ -64,6 +65,7 @@ export function Game({ role, character, selectedGame }) {
 
       setIsFetched(true);
     }
+    fetchGameState();
   }, [selectedGame]);
 
   React.useEffect(() => {
@@ -90,6 +92,7 @@ export function Game({ role, character, selectedGame }) {
       if (socket && socket.readyState === WebSocket.OPEN) {
         socket.send(JSON.stringify({
           type: 'state',
+          game: selectedGame.name,
           players,
           monsters,
           mapImage,
@@ -99,7 +102,7 @@ export function Game({ role, character, selectedGame }) {
     });
     }, 2000);
     return () => clearTimeout(timeout);
-  }, [players, monsters, mapImage, messages, selectedGame]);
+  }, [players, monsters, mapImage, messages, selectedGame, socket]);
 
   React.useEffect(() => {
     if (character?.magicStat) setSpellUses(character.magicStat);
@@ -217,11 +220,19 @@ export function Game({ role, character, selectedGame }) {
     if (!monster || !targetPlayer) return;
 
     const damage = rollDice(monster.attack);
-    const newHP = Math.max(0, targetPlayer.currentHP - damage);
+    const newHP = Math.max(0, targetPlayer.character.currentHP - damage);
 
     setPlayers(prev =>
       prev.map((p, i) =>
-        i === targetIndex ? { ...p, currentHP: Math.max(0, p.currentHP - damage) } : p
+        i === targetIndex 
+          ? {
+            ...p,
+            character: {
+              ...p.character,
+              currentHP: Math.max(0, p.character.currentHP - damage),
+            }
+          }
+        : p
       )
     );
 
@@ -238,7 +249,7 @@ export function Game({ role, character, selectedGame }) {
     setSelectedMonster('');
   }
 
-  function handleSend(e) {
+  async function handleSend(e) {
     e.preventDefault();
     if (!input.trim() || !socket) return;
 
@@ -250,10 +261,23 @@ export function Game({ role, character, selectedGame }) {
     const newMessage = {
       sender: senderName,
       text: input.trim(),
-      type: 'chat'
+      type: 'chat',
+      game: selectedGame.name
     };
 
     socket.send(JSON.stringify(newMessage));
+
+    await fetch('/api/game/state', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        name: selectedGame.name,
+        messeges: [...messages, newMessage]
+      })
+    });
+
     setInput('');
   }
 
