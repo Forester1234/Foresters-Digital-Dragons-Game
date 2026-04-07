@@ -1,3 +1,4 @@
+
 const cookieParser = require('cookie-parser');
 const bcrypt = require('bcryptjs');
 const express = require('express');
@@ -200,9 +201,9 @@ async function findUser(field, value) {
 function setAuthCookie(res, authToken) {
   res.cookie(authCookieName, authToken, {
     maxAge: 1000 * 60 * 60 * 24 * 365,
-    secure: true,
+    secure: false,
     httpOnly: true,
-    sameSite: 'strict',
+    sameSite: 'lax',
   });
 }
 
@@ -211,3 +212,4 @@ const httpService = app.listen(port, () => {
 });
 
 peerProxy(httpService);
+

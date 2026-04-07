@@ -28,9 +28,15 @@ export function Game({ role, character, selectedGame }) {
   React.useEffect(() => {
     const wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
     const ws = new WebSocket(`${wsProtocol}://${window.location.host}/ws`);
-    
-    ws.onopen = () => console.log('Connected to WebSocket');
-    
+
+    ws.onopen = () => {
+      console.log('Connected to WebSocket');
+      ws.send(JSON.stringify({
+      type: 'join',
+      game: selectedGame.name
+  }));
+    };
+
     ws.onmessage = (event) => {
       const msg = JSON.parse(event.data);
       if (msg.game !== selectedGame.name) return;
@@ -69,40 +75,34 @@ export function Game({ role, character, selectedGame }) {
   }, [selectedGame]);
 
   React.useEffect(() => {
-    console.log(selectedGame);
+    if (!socket || socket.readyState !== WebSocket.OPEN) return;
 
+    socket.send(JSON.stringify({
+      type: 'state',
+      game: selectedGame.name,
+      players,
+      monsters,
+      mapImage,
+      messages: messages.slice(-20),
+    }));
+  }, [players, monsters, mapImage]);
+
+  React.useEffect(() => {
     if (!isFetched) return;
 
-    const timeout = setTimeout(() => {
-      fetch('/api/game/state', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          name: selectedGame.name,
-          players: players,
-          monsters: monsters,
-          mapImage:mapImage,
-          messages: messages.slice(-20)
-        })
-      }).then(res => {
-      if (!res.ok) {
-        console.error("Save failed", res.status);
-      }
-      if (socket && socket.readyState === WebSocket.OPEN) {
-        socket.send(JSON.stringify({
-          type: 'state',
-          game: selectedGame.name,
-          players,
-          monsters,
-          mapImage,
-          messages: messages.slice(-20),
-        }));
-      }
-    });
-    }, 2000);
-    return () => clearTimeout(timeout);
-  }, [players, monsters, mapImage, messages, selectedGame, socket]);
+    fetch('/api/game/state', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        name: selectedGame.name,
+        players,
+        monsters,
+        mapImage,
+        messages: messages.slice(-20),
+      }),
+    }).catch(err => console.error('Save failed', err));
+  }, [players, monsters, mapImage, messages]);
 
   React.useEffect(() => {
     if (character?.magicStat) setSpellUses(character.magicStat);
@@ -238,11 +238,11 @@ export function Game({ role, character, selectedGame }) {
 
     addMessage(
       monster.name,
-      `${monster.name} attacks ${targetPlayer.name} for ${damage} damage!`
+      `${monster.name} attacks ${targetPlayer.playerName} for ${damage} damage!`
     );
 
     if (newHP <= 0) {
-      addMessage('System', `${targetPlayer.name} has been defeated!`);
+      addMessage('System', `${targetPlayer.playerName} has been defeated!`);
     }
 
     setSelectedTarget('');
@@ -264,6 +264,8 @@ export function Game({ role, character, selectedGame }) {
       type: 'chat',
       game: selectedGame.name
     };
+
+    setMessages(prev => [...prev.slice(-19), newMessage]);
 
     socket.send(JSON.stringify(newMessage));
 

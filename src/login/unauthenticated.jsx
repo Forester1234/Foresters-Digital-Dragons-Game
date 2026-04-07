@@ -28,9 +28,8 @@ export function Unauthenticated(props) {
         const body = await response.json();
         setDisplayError(body.message || 'Login failed');
       }
-    } catch {
-        const body = await response.json();
-        setDisplayError(body.message || 'Login error');
+    } catch (err) {
+      setDisplayError('Login error');
     }
   }
 

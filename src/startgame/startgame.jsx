@@ -26,7 +26,7 @@ export function StartGame({ onGameSelect, setRole, character }) {
         if (response.ok) {
           localStorage.setItem('gameName', adventure);
           setRole('gm');
-          onGameSelect(adventure);
+          onGameSelect({ name: adventure });
           navigate('/game');
         } else {
           const text = await response.text();
@@ -47,7 +47,7 @@ export function StartGame({ onGameSelect, setRole, character }) {
 
           localStorage.setItem('gameName', adventure);
           setRole(data.role);
-          onGameSelect(adventure);
+          onGameSelect({ name: adventure });
 
           if (data.role === 'gm') {
             navigate('/game');

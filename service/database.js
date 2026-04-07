@@ -45,11 +45,11 @@ async function addGame(game) {
 }
 
 async function updateGame(game) {
-  await gameCollection.updateOne({ name: game.name }, { $set: game }, { upsert: true });
+  await gameCollection.updateOne({ id: game.id }, { $set: game }, { upsert: true });
 }
 
-function getGame(name) {
-  return gameCollection.findOne({ name });
+function getGame(id) {
+  return gameCollection.findOne({ id });
 }
 
 function getAllGames() {

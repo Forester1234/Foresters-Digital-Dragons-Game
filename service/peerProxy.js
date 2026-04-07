@@ -9,7 +9,16 @@ function peerProxy(httpServer) {
 
     // Forward messages to everyone except the sender
     socket.on('message', function message(data) {
-      const msg = JSON.parse(data);
+      let msg;
+      try {
+        msg = JSON.parse(data);
+      } catch {
+        return;
+      }
+      if (msg.type === 'join') {
+        socket.game = msg.game;
+        return;
+      }
       socket.game = msg.game;
       socketServer.clients.forEach((client) => {
         if (
