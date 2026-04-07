@@ -24,6 +24,26 @@ export function Game({ role, character, selectedGame }) {
   const [isFetched, setIsFetched] = React.useState(false);
 
   React.useEffect(() => {
+    if (!selectedGame) return;
+
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    const ws = new WebSocket(`${wsProtocol}://${window.location.host}`);
+    
+    ws.onopen = () => console.log('Connected to WebSocket');
+    
+    ws.onmessage = (event) => {
+      const msg = JSON.parse(event.data);
+      if (msg.type === 'chat') {
+        setMessages(prev => [...prev.slice(-19), { sender: msg.sender, text: msg.text }]);
+      }
+    };
+    
+    setSocket(ws);
+
+    return () => ws.close();
+  }, [selectedGame]);
+
+  React.useEffect(() => {
     async function fetchGameState() {
       if (!selectedGame) return;
       const response = await fetch(`/api/game/state/${selectedGame}`, {
