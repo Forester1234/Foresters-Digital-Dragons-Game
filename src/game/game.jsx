@@ -26,8 +26,6 @@ export function Game({ role, character, selectedGame }) {
   const [isFetched, setIsFetched] = React.useState(false);
 
   React.useEffect(() => {
-    if (!selectedGame) return;
-
     const wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
     const ws = new WebSocket(`${wsProtocol}://${window.location.host}`);
     
@@ -35,8 +33,14 @@ export function Game({ role, character, selectedGame }) {
     
     ws.onmessage = (event) => {
       const msg = JSON.parse(event.data);
-      if (msg.type === 'chat') {
-        setMessages(prev => [...prev.slice(-19), { sender: msg.sender, text: msg.text }]);
+      if (msg.type === 'state') {
+        setPlayers(msg.players || []);
+        setMonsters(msg.monsters || []);
+        setMapImage(msg.mapImage || forestMap);
+
+        if (msg.messages) {
+          setMessages(prev => [...prev.slice(-10), ...msg.messages.slice(-10)]);
+        }
       }
     };
     
@@ -47,8 +51,7 @@ export function Game({ role, character, selectedGame }) {
 
   React.useEffect(() => {
     async function fetchGameState() {
-      if (!selectedGame) return;
-      const response = await fetch(`/api/game/state/${selectedGame}`, {
+      const response = await fetch(`/api/game/state/${selectedGame.name}`, {
         credentials: 'include',
       });
       if (response.ok) {
@@ -61,8 +64,6 @@ export function Game({ role, character, selectedGame }) {
 
       setIsFetched(true);
     }
-
-    fetchGameState();
   }, [selectedGame]);
 
   React.useEffect(() => {
@@ -76,7 +77,7 @@ export function Game({ role, character, selectedGame }) {
         credentials: 'include',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
-          name: selectedGame,
+          name: selectedGame.name,
           players: players,
           monsters: monsters,
           mapImage:mapImage,
@@ -85,6 +86,15 @@ export function Game({ role, character, selectedGame }) {
       }).then(res => {
       if (!res.ok) {
         console.error("Save failed", res.status);
+      }
+      if (socket && socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({
+          type: 'state',
+          players,
+          monsters,
+          mapImage,
+          messages: messages.slice(-20),
+        }));
       }
     });
     }, 2000);
