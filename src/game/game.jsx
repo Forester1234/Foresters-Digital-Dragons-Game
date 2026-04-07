@@ -250,7 +250,7 @@ export function Game({ role, character, selectedGame }) {
 
   function handleSend(e) {
     e.preventDefault();
-    if (!input.trim()) return;
+    if (!input.trim() || !socket) return;
 
     const senderName =
       role === 'gm'
@@ -260,9 +260,10 @@ export function Game({ role, character, selectedGame }) {
     const newMessage = {
       sender: senderName,
       text: input.trim(),
+      type: 'chat'
     };
 
-    setMessages((prev) => [...prev, newMessage]);
+    socket.send(JSON.stringify(newMessage));
     setInput('');
   }
 
