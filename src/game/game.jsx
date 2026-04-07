@@ -3,6 +3,8 @@ import './game.css';
 import forestMap from '/forest-map.png';
 
 export function Game({ role, character, selectedGame }) {
+  const [socket, setSocket] = React.useState(null);
+
   const [players, setPlayers] = React.useState([]);
   const [spellUses, setSpellUses] = React.useState(character?.magicStat || 0);
   const [selectedTarget, setSelectedTarget] = React.useState('');
