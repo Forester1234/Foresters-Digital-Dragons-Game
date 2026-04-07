@@ -269,12 +269,13 @@ export function Game({ role, character, selectedGame }) {
 
     await fetch('/api/game/state', {
       method: 'POST',
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
         name: selectedGame.name,
-        messeges: [...messages, newMessage]
+        messages: [...messages, newMessage]
       })
     });
 
