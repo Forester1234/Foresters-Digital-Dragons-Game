@@ -34,11 +34,12 @@ export function Game({ role, character, selectedGame }) {
       ws.send(JSON.stringify({
       type: 'join',
       game: selectedGame.name
-  }));
+    }));
     };
 
-    ws.onmessage = (event) => {
-      const msg = JSON.parse(event.data);
+    ws.onmessage = async (event) => {
+      const text = await event.data.text()
+      const msg = JSON.parse(text);
       if (msg.game !== selectedGame.name) return;
       if (msg.type === 'state') {
         setPlayers(msg.players || []);
@@ -89,23 +90,26 @@ export function Game({ role, character, selectedGame }) {
       mapImage,
       messages: messages.slice(-20),
     }));
-  }, [players, monsters, mapImage]);
+  }, [socket]);
 
   React.useEffect(() => {
-    if (!isFetched) return;
+    const interval = setInterval(() => {
+      if (!isFetched) return;
 
-    fetch('/api/game/state', {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        name: selectedGame.name,
-        players,
-        monsters,
-        mapImage,
-        messages: messages.slice(-20),
-      }),
-    }).catch(err => console.error('Save failed', err));
+      fetch('/api/game/state', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          name: selectedGame.name,
+          players,
+          monsters,
+          mapImage,
+          messages: messages.slice(-20),
+        }),
+      }).catch(err => console.error('Save failed', err));
+    }, 5000);
+    return () => clearInterval(interval);
   }, [players, monsters, mapImage, messages]);
 
   React.useEffect(() => {
