@@ -53,7 +53,11 @@ export function Game({ role, character, selectedGame }) {
     
     setSocket(ws);
 
-    return () => ws.close();
+    return () => {
+      ws.onopen = null;
+      ws.onmessage = null;
+      ws.onclose = null;
+    };
   }, [selectedGame]);
 
   React.useEffect(() => {
@@ -388,7 +392,7 @@ export function Game({ role, character, selectedGame }) {
                             <input
                               type="checkbox"
                               value={i}
-                              checked={selectedSpellTargets.includes(String(i))}
+                              checked={selectedSpellTargets.includes(i)}
                               onChange={(e) => {
                                 const value = e.target.value;
                                 if (selectedSpellTargets.includes(value)) {
