@@ -92,26 +92,6 @@ export function Game({ role, character, selectedGame }) {
   }, [players, monsters, mapImage, messages, selectedGame]);
 
   React.useEffect(() => {
-    if (!selectedGame?.name) return;
-
-    const interval = setInterval(async () => {
-      const response = await fetch(`/api/game/state/${selectedGame.name}`, {
-        credentials: 'include',
-      });
-
-      if (response.ok) {
-        const state = await response.json();
-        setPlayers(state.players || []);
-        setMonsters(state.monsters || []);
-        setMessages(state.messages || []);
-        setMapImage(state.mapImage || forestMap);
-      }
-    }, 3000);
-
-    return () => clearInterval(interval);
-  }, [selectedGame]);
-
-  React.useEffect(() => {
     if (character?.magicStat) setSpellUses(character.magicStat);
   }, [character]);
 
