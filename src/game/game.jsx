@@ -40,14 +40,21 @@ export function Game({ role, character, selectedGame }) {
     ws.onmessage = async (event) => {
       const text = await event.data.text()
       const msg = JSON.parse(text);
-      if (msg.game !== selectedGame.name) return;
-      if (msg.type === 'state') {
-        if (role !== 'gm') {
-          // If not GM, only update local state
-          setPlayers(msg.players || []);
-          setMonsters(msg.monsters || []);
-          setMapImage(msg.mapImage || forestMap);
+
+      if (role === 'gm') {
+        if (msg.type === 'attack') {
+          handleAttackFromPlayer(msg);
         }
+
+        if (msg.type === 'spell') {
+          handleSpellFromPlayer(msg);
+        }
+      }
+
+      if (msg.type === 'state') {
+        setPlayers(msg.players || []);
+        setMonsters(msg.monsters || []);
+        setMapImage(msg.mapImage || forestMap);
       }
 
       if (msg.type === 'chat') {
@@ -184,40 +191,111 @@ export function Game({ role, character, selectedGame }) {
   }
 
   function handlePlayerAttack(weapon) {
-    const damage = rollDice(`${weapon.dice}d6`);
+    if (!socket) return;
 
-    const { targetName, died } = applyDamageToMonster(
-      Number(selectedTarget),
-      damage
-    );
-
-    addMessage(character.name, `${weapon.name} hits ${targetName} for ${damage} damage!`);
-
-    if (died) {
-      addMessage("System", `${targetName} has been slain!`);
-    }
+    socket.send(JSON.stringify({
+      type: 'attack',
+      game: selectedGame.name,
+      attacker: character.name,
+      targetIndex: Number(selectedTarget),
+      weapon
+    }));
 
     setSelectedTarget('');
   }
 
+  function handleAttackFromPlayer(msg) {
+    const { targetIndex, weapon, attacker } = msg;
+
+    const damage = rollDice(`${weapon.dice}d6`);
+
+    setMonsters(prev => {
+      const updated = prev
+        .map((m,i) => {
+          if (i !== targetIndex) return m;
+
+          const newHP = Math.max(0, m.hp - damage);
+          return { ...m, hp: newHP };
+        })
+        .filter(m => m.hp > 0);
+
+        const targetMonster = prev[targetIndex];
+        const died = targetMonster && (targetMonster.hp - damage) <= 0;
+
+        if (socket && socket.readyState === WebSocket.OPEN) {
+          socket.send(JSON.stringify({
+            type: 'state',
+            game: selectedGame.name,
+            players,
+            monsters: updated,
+            mapImage,
+          }));
+        }
+
+        addMessage(attacker, `${weapon.name} hits ${targetMonster.name} for ${damage} damage!`);
+        if (died) {
+          addMessage('System', `${targetMonster.name} has been defeated!`);
+        }
+
+      return updated;
+    });
+  }
+
   function handleSpellCast(spell) {
     if (spellUses <= 0) return;
+    if (!socket) return;
 
-    setSpellUses(prev => prev - 1);
-
-    selectedSpellTargets.forEach(index => {
-      const damage = rollDice(`${spell.dice}d6`);
-
-      const { targetName, died } = applyDamageToMonster(Number(index), damage);
-
-      addMessage(character.name, `${spell.name} hits ${targetName} for ${damage} damage!`);
-
-      if (died) {
-        addMessage("System", `${targetName} has been incinerated!`);
-      }
-    });
+    socket.send(JSON.stringify({
+      type: 'spell',
+      game: selectedGame.name,
+      caster: character.name,
+      targets: selectedSpellTargets,
+      spell
+    }));
 
     setSelectedSpellTargets([]);
+  }
+
+  function handleSpellFromPlayer(msg) {
+    const { targets, spell, caster } = msg;
+
+    setMonsters(prev => {
+      let updated = [...prev];
+
+      targets.forEach(index => {
+        const monster = updated[index];
+        if (!monster) return;
+
+        const damage = rollDice(`${spell.dice}d6`);
+        const newHP = Math.max(0, monster.hp - damage);
+
+        addMessage(caster, `${spell.name} hits ${monster.name} for ${damage} damage!`);
+
+        updated[index] = { ...monster, hp: newHP };
+      });
+
+      updated = updated.filter(m => m.hp > 0);
+
+      targets.forEach(index => {
+        const monster = prev[index];
+        if (!monster) return;
+        if (monster.hp > 0 && updated.every(u => u.name !== monster.name)) {
+          addMessage('System', `${monster.name} has been defeated!`);
+        }
+      });
+
+      if (socket && socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({
+          type: 'state',
+          game: selectedGame.name,
+          players,
+          monsters: updated,
+          mapImage,
+        }));
+      }
+
+      return updated;
+    });
   }
 
   function handleMonsterAttack() {
