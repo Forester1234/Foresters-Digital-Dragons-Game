@@ -42,9 +42,12 @@ export function Game({ role, character, selectedGame }) {
       const msg = JSON.parse(text);
       if (msg.game !== selectedGame.name) return;
       if (msg.type === 'state') {
-        setPlayers(msg.players || []);
-        setMonsters(msg.monsters || []);
-        setMapImage(msg.mapImage || forestMap);
+        if (role !== 'gm') {
+          // If not GM, only update local state
+          setPlayers(msg.players || []);
+          setMonsters(msg.monsters || []);
+          setMapImage(msg.mapImage || forestMap);
+        }
       }
 
       if (msg.type === 'chat') {
@@ -82,15 +85,16 @@ export function Game({ role, character, selectedGame }) {
   React.useEffect(() => {
     if (!socket || socket.readyState !== WebSocket.OPEN) return;
 
+    if (role !== 'gm') return;
+
     socket.send(JSON.stringify({
       type: 'state',
       game: selectedGame.name,
       players,
       monsters,
       mapImage,
-      messages: messages.slice(-20),
     }));
-  }, [socket]);
+  }, [players, monsters, mapImage, socket, role]);
 
   React.useEffect(() => {
     const interval = setInterval(() => {
