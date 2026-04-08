@@ -168,26 +168,19 @@ export function Game({ role, character, selectedGame }) {
     return total + bonus;
   }
 
-  function applyDamageToMonster(index, damage) {
-    const monster = monsters[index];
-    if (!monster) return {};
-
-    const newHP = Math.max(0, monster.hp - damage);
-    const died = newHP <= 0;
-
-    setMonsters(prev =>
-      prev
-        .map((m, i) =>
-          i === index ? { ...m, hp: Math.max(0, m.hp - damage) } : m
-        )
-        .filter(m => m.hp > 0)
-    );
-
-    return { targetName: monster.name, died };
-  }
-
   function addMessage(sender, text) {
-    setMessages(prev => [...prev.slice(-19), { sender, text }]);
+    const newMsg = {
+      sender,
+      text,
+      type: 'chat',
+      game: selectedGame.name
+    };
+
+    setMessages(prev => [...prev.slice(-19), newMsg]);
+
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify(newMsg));
+    }
   }
 
   function handlePlayerAttack(weapon) {
@@ -328,11 +321,21 @@ export function Game({ role, character, selectedGame }) {
 
     addMessage(
       monster.name,
-      `${monster.name} attacks ${targetPlayer.playerName} for ${damage} damage!`
+      `${monster.name} attacks ${targetPlayer.character?.name || targetPlayer.playerName} for ${damage} damage!`
     );
 
     if (newHP <= 0) {
-      addMessage('System', `${targetPlayer.playerName} has been defeated!`);
+      addMessage('System', `${targetPlayer.character?.name || targetPlayer.playerName} has been defeated!`);
+    }
+
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify({
+        type: 'state',
+        game: selectedGame.name,
+        players,
+        monsters,
+        mapImage,
+      }));
     }
 
     setSelectedTarget('');
