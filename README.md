@@ -145,8 +145,8 @@ For this deliverable I did the following. I checked the box `[x]` and added a de
 
 For this deliverable I did the following. I checked the box `[x]` and added a description for things I completed.
 
-- [ ] **Backend listens for WebSocket connection** - I did not complete this part of the deliverable.
-- [ ] **Frontend makes WebSocket connection** - I did not complete this part of the deliverable.
-- [ ] **Data sent over WebSocket connection** - I did not complete this part of the deliverable.
-- [ ] **WebSocket data displayed** - I did not complete this part of the deliverable.
-- [ ] **Application is fully functional** - I did not complete this part of the deliverable.
+- [X] **Backend listens for WebSocket connection** - See peerProxy.js.
+- [X] **Frontend makes WebSocket connection** - See game.jsx.
+- [X] **Data sent over WebSocket connection** - Sends real-time messages for actions like Chat messages.
+- [X] **WebSocket data displayed** - Chat messages instantly appear, monster and player health updates in real time, map changes are immediently visible.
+- [X] **Application is fully functional** - Everything is working properly, allowing the GM to make monsters and update the map, which the players can see and attack.
