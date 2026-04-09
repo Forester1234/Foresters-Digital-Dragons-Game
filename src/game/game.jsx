@@ -38,8 +38,20 @@ export function Game({ role, character, selectedGame }) {
     };
 
     ws.onmessage = async (event) => {
-      const text = await event.data.text()
-      const msg = JSON.parse(text);
+      let msg;
+
+      try {
+        if (typeof event.data === 'string') {
+          msg = JSON.parse(event.data);
+        } else {
+          msg = JSON.parse(await event.data.text());
+        }
+        console.log(msg.type);
+      } catch (err) {
+        console.error('Bad message: ', err);
+        return;
+      }
+
       console.log(msg.type);
 
       if (role === 'gm') {
@@ -337,8 +349,6 @@ export function Game({ role, character, selectedGame }) {
         : p
       )
     );
-
-    // Send message locally like in handleSend
 
     if (socket) {
       const newMessage = {

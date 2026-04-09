@@ -4,7 +4,7 @@ const express = require('express');
 const uuid = require('uuid');
 const app = express();
 const db = require('./database.js');
-const { peerProxy } = require('./peerProxy.js');
+const { peerProxy, broadcastToGame } = require('./peerProxy.js');
 
 const authCookieName = 'token';
 
@@ -129,6 +129,19 @@ apiRouter.post('/game/join', verifyAuth, async (req, res) => {
 
   game.players.push(player);
   await db.updateGame(game);
+
+  broadcastToGame(game.name, {
+    type: 'state',
+    players: game.players,
+    monsters: game.monsters,
+    mapImage: game.mapImage,
+    messages: game.messages,
+  });
+  broadcastToGame(game.name, {
+    type: 'chat',
+    sender: 'System',
+    text: `${playerName} joined the game`,
+  });
 
   res.send({
     ...game,
