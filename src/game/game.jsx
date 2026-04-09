@@ -40,6 +40,7 @@ export function Game({ role, character, selectedGame }) {
     ws.onmessage = async (event) => {
       const text = await event.data.text()
       const msg = JSON.parse(text);
+      console.log(msg.type);
 
       if (role === 'gm') {
         if (msg.type === 'attack') {
@@ -168,21 +169,6 @@ export function Game({ role, character, selectedGame }) {
     return total + bonus;
   }
 
-  function addMessage(sender, text) {
-    const newMsg = {
-      sender,
-      text,
-      type: 'chat',
-      game: selectedGame.name
-    };
-
-    setMessages(prev => [...prev.slice(-19), newMsg]);
-
-    if (socket && socket.readyState === WebSocket.OPEN) {
-      socket.send(JSON.stringify(newMsg));
-    }
-  }
-
   function handlePlayerAttack(weapon) {
     if (!socket) return;
 
@@ -215,7 +201,7 @@ export function Game({ role, character, selectedGame }) {
         const targetMonster = prev[targetIndex];
         const died = targetMonster && (targetMonster.hp - damage) <= 0;
 
-        if (socket && socket.readyState === WebSocket.OPEN) {
+        if (socket) {
           socket.send(JSON.stringify({
             type: 'state',
             game: selectedGame.name,
@@ -225,9 +211,26 @@ export function Game({ role, character, selectedGame }) {
           }));
         }
 
-        addMessage(attacker, `${weapon.name} hits ${targetMonster.name} for ${damage} damage!`);
-        if (died) {
-          addMessage('System', `${targetMonster.name} has been defeated!`);
+        if (socket) {
+          const newMessage = {
+            sender: attacker,
+            text: `${weapon.name} hits ${targetMonster.name} for ${damage} damage!`,
+            type: 'chat',
+            game: selectedGame.name
+          };
+          setMessages(prev => [...prev.slice(-19), newMessage]);
+          socket.send(JSON.stringify(newMessage));
+        }
+
+        if (died && socket) {
+          const newMessage = {
+            sender: 'System',
+            text: `${targetMonster.name} has been defeated!`,
+            type: 'chat',
+            game: selectedGame.name
+          };
+          setMessages(prev => [...prev.slice(-19), newMessage]);
+          socket.send(JSON.stringify(newMessage));
         }
 
       return updated;
@@ -262,7 +265,16 @@ export function Game({ role, character, selectedGame }) {
         const damage = rollDice(`${spell.dice}d6`);
         const newHP = Math.max(0, monster.hp - damage);
 
-        addMessage(caster, `${spell.name} hits ${monster.name} for ${damage} damage!`);
+        if (socket) {
+          const newMessage = {
+            sender: caster,
+            text: `${spell.name} hits ${monster.name} for ${damage} damage!`,
+            type: 'chat',
+            game: selectedGame.name
+          };
+          setMessages(prev => [...prev.slice(-19), newMessage]);
+          socket.send(JSON.stringify(newMessage));
+        }
 
         updated[index] = { ...monster, hp: newHP };
       });
@@ -272,12 +284,19 @@ export function Game({ role, character, selectedGame }) {
       targets.forEach(index => {
         const monster = prev[index];
         if (!monster) return;
-        if (monster.hp > 0 && updated.every(u => u.name !== monster.name)) {
-          addMessage('System', `${monster.name} has been defeated!`);
+        if (monster.hp > 0 && updated.every(u => u.name !== monster.name && socket)) {
+          const newMessage = {
+            sender: 'System',
+            text: `${monster.name} has been defeated!`,
+            type: 'chat',
+            game: selectedGame.name
+          };
+          setMessages(prev => [...prev.slice(-19), newMessage]);
+          socket.send(JSON.stringify(newMessage));
         }
       });
 
-      if (socket && socket.readyState === WebSocket.OPEN) {
+      if (socket) {
         socket.send(JSON.stringify({
           type: 'state',
           game: selectedGame.name,
@@ -319,16 +338,31 @@ export function Game({ role, character, selectedGame }) {
       )
     );
 
-    addMessage(
-      monster.name,
-      `${monster.name} attacks ${targetPlayer.character?.name || targetPlayer.playerName} for ${damage} damage!`
-    );
+    // Send message locally like in handleSend
 
-    if (newHP <= 0) {
-      addMessage('System', `${targetPlayer.character?.name || targetPlayer.playerName} has been defeated!`);
+    if (socket) {
+      const newMessage = {
+        sender: monster.name,
+        text: `${monster.name} attacks ${targetPlayer.character?.name || targetPlayer.playerName} for ${damage} damage!`,
+        type: 'chat',
+        game: selectedGame.name
+      };
+      setMessages(prev => [...prev.slice(-19), newMessage]);
+      socket.send(JSON.stringify(newMessage));
     }
 
-    if (socket && socket.readyState === WebSocket.OPEN) {
+    if (newHP <= 0) {
+      const newMessage = {
+        sender: 'System',
+        text: `${targetPlayer.character?.name || targetPlayer.playerName} has been defeated!`,
+        type: 'chat',
+        game: selectedGame.name
+      };
+      setMessages(prev => [...prev.slice(-19), newMessage]);
+      socket.send(JSON.stringify(newMessage));
+    }
+
+    if (socket) {
       socket.send(JSON.stringify({
         type: 'state',
         game: selectedGame.name,
@@ -357,9 +391,7 @@ export function Game({ role, character, selectedGame }) {
       type: 'chat',
       game: selectedGame.name
     };
-
     setMessages(prev => [...prev.slice(-19), newMessage]);
-
     socket.send(JSON.stringify(newMessage));
 
     await fetch('/api/game/state', {
@@ -483,7 +515,7 @@ export function Game({ role, character, selectedGame }) {
                               value={i}
                               checked={selectedSpellTargets.includes(i)}
                               onChange={(e) => {
-                                const value = e.target.value;
+                                const value = Number(e.target.value);
                                 if (selectedSpellTargets.includes(value)) {
                                   setSelectedSpellTargets(prev => prev.filter(v => v !== value));
                                 } else if (selectedSpellTargets.length < 2) {
@@ -495,16 +527,16 @@ export function Game({ role, character, selectedGame }) {
                           </label>
                         ))}
                       </div>
-                        <div>
-                          <button
-                            name="action"
-                            value="first"
-                            disabled={spellUses <= 0 || selectedSpellTargets.length === 0}
-                            onClick={() => handleSpellCast(spell)}
-                          >
-                            Cast
-                          </button>
-                        </div>
+                      <div>
+                        <button
+                          name="action"
+                          value="first"
+                          disabled={spellUses <= 0 || selectedSpellTargets.length === 0}
+                          onClick={() => handleSpellCast(spell)}
+                        >
+                          Cast
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
